@@ -22,3 +22,17 @@ async def get_daily_plan(child_id: int, db: AsyncSession = Depends(get_db)):
 async def get_weekly_progress(child_id: int, db: AsyncSession = Depends(get_db)):
     """Return completion metrics for the current week."""
     return await crud.fetch_weekly_progress(db, child_id)
+
+
+@router.post("/{child_id}/checkin", response_model=schemas.DailyCheckinOut)
+async def create_daily_checkin(
+    child_id: int,
+    payload: schemas.DailyCheckinCreate,
+    db: AsyncSession = Depends(get_db),
+):
+    """Store daily joy score + notes for personalization signals."""
+    checkin = await crud.create_daily_checkin(db, child_id, payload)
+    if checkin is None:
+        raise HTTPException(status_code=404, detail="Child profile not found")
+    return checkin
+
