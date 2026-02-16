@@ -89,8 +89,6 @@ class MilestoneOut(MilestoneBase):
     model_config = {"from_attributes": True}
 
 
-
-
 class MilestoneStatusOut(BaseModel):
     """Milestone response with developmental phase examples and achieved status."""
 
@@ -98,6 +96,7 @@ class MilestoneStatusOut(BaseModel):
     focus: str
     title: str
     achieved: bool
+
 
 class WeeklyProgress(BaseModel):
     """Aggregated weekly completion stats for a child."""
@@ -107,3 +106,23 @@ class WeeklyProgress(BaseModel):
     total_tasks: int
     completed_tasks: int
     completion_rate: float
+
+
+# ---------- Daily check-in schemas ----------
+class DailyCheckinCreate(BaseModel):
+    """Payload for logging a joy score and optional parent notes."""
+
+    joy_score: int = Field(..., ge=1, le=5)
+    parent_notes: str = ""
+
+
+class DailyCheckinOut(BaseModel):
+    """Response model for persisted daily check-ins."""
+
+    id: int
+    child_id: int
+    joy_score: int
+    parent_notes: str | None
+    checkin_date: date
+
+    model_config = {"from_attributes": True}
