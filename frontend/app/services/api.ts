@@ -25,17 +25,49 @@ export type SaveCheckinPayload = {
   parent_notes: string;
 };
 
+/**
+ * Bootstrap a profile for first-run demos.
+ *
+ * This prevents recurring 404 responses from `/daily-plan/{childId}`
+ * when no profile has been created yet.
+ */
+async function ensureDefaultProfileExists(): Promise<void> {
+  await fetch(`${API_BASE_URL}/profiles/`, {
+    method: 'POST',
+    headers: { 'Content-Type': 'application/json' },
+    body: JSON.stringify({
+      name: 'Demo Child',
+      date_of_birth: '2015-06-15',
+      interests: ['learning', 'sports'],
+      parent_priority: 'balanced development',
+    }),
+  });
+}
+
 /** Fetch today's generated daily plan tasks for one child profile. */
 export async function fetchDailyPlan(childId: number): Promise<DailyTask[]> {
   const response = await fetch(`${API_BASE_URL}/daily-plan/${childId}`, {
     cache: 'no-store',
   });
 
-  if (!response.ok) {
-    throw new Error('Failed to fetch daily plan');
+  if (response.ok) {
+    return response.json();
   }
 
-  return response.json();
+  // First-run scenario: child profile was never created.
+  // Try to bootstrap once, then retry the daily plan call.
+  if (response.status === 404) {
+    await ensureDefaultProfileExists();
+    const retry = await fetch(`${API_BASE_URL}/daily-plan/${childId}`, {
+      cache: 'no-store',
+    });
+
+    if (retry.ok) {
+      return retry.json();
+    }
+  }
+
+  throw new Error('Failed to fetch daily plan');
 }
 
 /** Toggle completion status for a single daily task. */
