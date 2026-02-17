@@ -208,6 +208,28 @@ async def update_task_status(
     return task
 
 
+async def create_daily_checkin(
+    db: AsyncSession,
+    child_id: int,
+    payload: schemas.DailyCheckinCreate,
+) -> models.DailyCheckin | None:
+    """Persist a daily check-in (joy score + notes) for a child profile."""
+    profile = await get_profile(db, child_id)
+    if profile is None:
+        return None
+
+    checkin = models.DailyCheckin(
+        child_id=child_id,
+        joy_score=payload.joy_score,
+        parent_notes=payload.parent_notes or None,
+        checkin_date=date.today(),
+    )
+    db.add(checkin)
+    await db.commit()
+    await db.refresh(checkin)
+    return checkin
+
+
 async def fetch_weekly_progress(db: AsyncSession, child_id: int) -> schemas.WeeklyProgress:
     """Compute weekly completion ratio for dashboard charting."""
     today = date.today()

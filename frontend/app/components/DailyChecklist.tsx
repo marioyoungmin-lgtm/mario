@@ -9,12 +9,77 @@ type DailyChecklistProps = {
 };
 
 const PILLAR_COLORS: Record<DailyTask['pillar'], string> = {
+
   Cognitive: 'bg-indigo-100 text-indigo-700',
   Physical: 'bg-emerald-100 text-emerald-700',
   Language: 'bg-sky-100 text-sky-700',
   Character: 'bg-amber-100 text-amber-700',
   Creativity: 'bg-fuchsia-100 text-fuchsia-700',
 };
+
+
+const DEMO_TASKS: DailyTask[] = [
+  {
+    id: 1001,
+    child_id: 1,
+    pillar: 'Cognitive',
+    title: 'Math Puzzle Sprint',
+    description: 'Solve 5 logic problems with a 15-minute timer.',
+    duration_minutes: 15,
+    difficulty_level: 'medium',
+    completed: true,
+    completion_timestamp: null,
+    date_assigned: new Date().toISOString().slice(0, 10),
+  },
+  {
+    id: 1002,
+    child_id: 1,
+    pillar: 'Physical',
+    title: 'Movement Circuit',
+    description: 'Complete 3 rounds of jump, squat, and stretch.',
+    duration_minutes: 20,
+    difficulty_level: 'easy',
+    completed: false,
+    completion_timestamp: null,
+    date_assigned: new Date().toISOString().slice(0, 10),
+  },
+  {
+    id: 1003,
+    child_id: 1,
+    pillar: 'Language',
+    title: 'Story Retell',
+    description: 'Read a short story and summarize it in 5 sentences.',
+    duration_minutes: 25,
+    difficulty_level: 'medium',
+    completed: false,
+    completion_timestamp: null,
+    date_assigned: new Date().toISOString().slice(0, 10),
+  },
+  {
+    id: 1004,
+    child_id: 1,
+    pillar: 'Character',
+    title: 'Gratitude Reflection',
+    description: 'Write down 3 things you are thankful for today.',
+    duration_minutes: 10,
+    difficulty_level: 'easy',
+    completed: true,
+    completion_timestamp: null,
+    date_assigned: new Date().toISOString().slice(0, 10),
+  },
+  {
+    id: 1005,
+    child_id: 1,
+    pillar: 'Creativity',
+    title: 'Sketch Challenge',
+    description: 'Draw your future city in under 20 minutes.',
+    duration_minutes: 20,
+    difficulty_level: 'hard',
+    completed: false,
+    completion_timestamp: null,
+    date_assigned: new Date().toISOString().slice(0, 10),
+  },
+];
 
 /**
  * Daily checklist page section for LifeOS 0-21.
@@ -40,8 +105,10 @@ export default function DailyChecklist({ childId = 1 }: DailyChecklistProps) {
         const dailyTasks = await fetchDailyPlan(childId);
         setTasks(dailyTasks);
         setError(null);
-      } catch (fetchError) {
-        setError(fetchError instanceof Error ? fetchError.message : 'Unable to load daily tasks');
+      } catch {
+        // Keep the design visible even if backend is unavailable in demo environments.
+        setTasks(DEMO_TASKS);
+        setError('Live backend unavailable. Showing demo data for executive preview.');
       } finally {
         setLoading(false);
       }
@@ -58,6 +125,14 @@ export default function DailyChecklist({ childId = 1 }: DailyChecklistProps) {
 
   const onToggleTask = async (taskId: number, completed: boolean) => {
     const previous = tasks;
+
+    // Demo rows are client-only and should not call the backend.
+    if (taskId >= 1000) {
+      setTasks((current) =>
+        current.map((task) => (task.id === taskId ? { ...task, completed } : task)),
+      );
+      return;
+    }
 
     // Optimistic UI update for snappy interactions.
     setTasks((current) =>
@@ -79,6 +154,13 @@ export default function DailyChecklist({ childId = 1 }: DailyChecklistProps) {
       setSaving(true);
       setSaveMessage(null);
       setError(null);
+
+      // Demo mode: acknowledge save locally when sample data is shown.
+      if (tasks.some((task) => task.id >= 1000)) {
+        setSaveMessage('Demo check-in saved locally. Connect backend to persist.');
+        return;
+      }
+
       await saveDailyCheckin({
         child_id: childId,
         joy_score: joyScore,
